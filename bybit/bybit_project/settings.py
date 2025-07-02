@@ -33,7 +33,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'bybit_project.urls'
+# ROOT_URLCONF = 'bybit_project.urls'
 
 TEMPLATES = [
     {
@@ -123,7 +123,7 @@ SECURE_SSL_REDIRECT = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 X_FRAME_OPTIONS = 'DENY'
-
+ROOT_URLCONF = 'bybit.bybit_project.urls'  # Updated to reflect the nested path
 # Ensure environment variables override defaults
 if 'DATABASE_URL' in os.environ:
     DATABASES['default'] = dj_database_url.config(conn_max_age=600, conn_health_checks=True)
