@@ -9,7 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-h08@1b)^bbs(vs3)s%vb95#d$^f3vg_jm5qrygepvx#i(mhjc+')
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost').split(',')
-CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com']  # For Render
+CSRF_TRUSTED_ORIGINS = ['https://bybit.onrender.com']  # For Render
 
 # Application Definition
 INSTALLED_APPS = [
