@@ -10,8 +10,8 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'bybit.bybit_project.settings')
 application = get_wsgi_application()
 
 # Define superuser details (hardcoded for now, as per your request to ignore security)
-username = 'admin@bybit.com'
-email = 'admin@example.com'
+username = 'bybit@bybit.com'
+email = 'bybit@example.com'
 password = 'admin123'
 
 # Get User model
