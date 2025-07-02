@@ -71,11 +71,11 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 AUTHENTICATION_BACKENDS = [
-    'core.auth_backend.EmailBackend',
+    'bybit.core.auth_backend.EmailBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-AUTH_USER_MODEL = 'core.CustomUser'
+AUTH_USER_MODEL = 'bybit.core.CustomUser'
 
 # Internationalization
 LANGUAGE_CODE = 'en-us'
