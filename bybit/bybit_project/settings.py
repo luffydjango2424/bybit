@@ -59,7 +59,7 @@ ROOT_URLCONF = "bybit_project.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / 'templates'],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -84,7 +84,8 @@ DATABASES = {
     )
 }
 
-
+if 'DATABASE_URL' in os.environ:
+    DATABASES['default'] = dj_database_url.config(conn_max_age=600)
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
@@ -124,7 +125,24 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+LOGOUT_REDIRECT_URL = '/login/'
+LOGIN_REDIRECT_URL = '/'
+
+AUTHENTICATION_BACKENDS = [
+    'core.auth_backend.EmailBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# Security settings for production
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
+ALLOWED_HOSTS = ['*']  # Update to specific domain after deployment
+SECRET_KEY = os.getenv('SECRET_KEY', 'your-default-secret-key-for-local-dev')
+CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com']  # For Render deployment
+
+AUTH_USER_MODEL = 'core.CustomUser'
