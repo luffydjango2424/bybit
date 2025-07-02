@@ -75,7 +75,7 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
 
-AUTH_USER_MODEL = 'bybit.core.CustomUser'
+AUTH_USER_MODEL = 'core.CustomUser'
 
 # Internationalization
 LANGUAGE_CODE = 'en-us'
