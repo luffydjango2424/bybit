@@ -25,8 +25,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-h08@1b)^bbs(vs3)s%vb95#d$^f3vg_jm5qrygepvx#i(mhjc+"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = True
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
+DEBUG = True
+# DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = ['*']
 
@@ -140,9 +140,32 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # Security settings for production
-DEBUG = os.getenv('DEBUG', 'False') == 'True'
+# DEBUG = os.getenv('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = ['*']  # Update to specific domain after deployment
 SECRET_KEY = os.getenv('SECRET_KEY', 'your-default-secret-key-for-local-dev')
 CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com']  # For Render deployment
 
 AUTH_USER_MODEL = 'core.CustomUser'
+
+# Session settings
+SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_ENGINE = 'django.contrib.sessions.backends.db' 
+
+# Add to settings.py
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        '': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}

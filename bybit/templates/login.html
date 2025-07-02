@@ -1,55 +1,132 @@
-{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Crypto Trading Platform</title>
-    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+    <title>Bybit - Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'bg-primary': '#1a1f2e',
+                        'bg-secondary': '#21273b',
+                        'bg-tertiary': '#2b3139',
+                        'text-primary': '#ffffff',
+                        'text-secondary': '#b7bdc6',
+                        'accent-orange': '#f5a623',
+                        'accent-green': '#0ecb81',
+                        'accent-red': '#f6465d',
+                        'border-color': '#3a3f50'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-bg-primary text-text-primary min-h-screen">
+    <div class="min-h-screen flex items-center justify-center bg-bg-primary">
+        <div class="max-w-md w-full space-y-8 p-6 sm:p-8">
+            <!-- Logo -->
+            <div class="text-center">
+                <h1 class="text-4xl font-bold text-accent-orange mb-2">Bybit</h1>
+                <p class="text-text-secondary">The World's Leading Crypto Exchange</p>
+            </div>
+
+            <!-- Login Form -->
+            <div class="bg-bg-tertiary rounded-lg p-6 sm:p-8 border border-border-color">
+                <h2 class="text-2xl font-semibold text-center mb-6">Sign In</h2>
+                {% if messages %}
+                    <div class="mb-4">
+                        {% for message in messages %}
+                            <p class="text-accent-red text-sm">{{ message }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <form class="space-y-6" method="POST" action="{% url 'login' %}" onsubmit="console.log('Form submitted with email:', document.getElementById('email').value)">
+                    {% csrf_token %}
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-text-secondary mb-2">
+                            Email
+                        </label>
+                        <input 
+                            id="email" 
+                            name="username" 
+                            type="email" 
+                            required 
+                            class="w-full px-3 py-3 bg-bg-secondary border border-border-color rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-orange focus:border-transparent"
+                            placeholder="Enter your email"
+                        />
+                    </div>
+
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-text-secondary mb-2">
+                            Password
+                        </label>
+                        <input 
+                            id="password" 
+                            name="password" 
+                            type="password" 
+                            required 
+                            class="w-full px-3 py-3 bg-bg-secondary border border-border-color rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-orange focus:border-transparent"
+                            placeholder="Enter your password"
+                        />
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <input 
+                                id="remember-me" 
+                                name="remember-me" 
+                                type="checkbox" 
+                                class="h-4 w-4 text-accent-orange focus:ring-accent-orange bg-bg-secondary border-border-color rounded"
+                            />
+                            <label for="remember-me" class="ml-2 block text-sm text-text-secondary">
+                                Remember me
+                            </label>
+                        </div>
+
+                        <div class="text-sm">
+                            <a href="#" class="text-accent-orange hover:text-orange-400">
+                                Forgot password?
+                            </a>
+                        </div>
+                    </div>
+
+                    <button 
+                        type="submit" 
+                        class="w-full bg-accent-orange hover:bg-orange-600 text-white font-semibold py-3 px-4 rounded-lg transition duration-200"
+                    >
+                        Sign In
+                    </button>
+                </form>
+
+                <div class="mt-6 text-center">
+                    <p class="text-text-secondary">
+                        Don't have an account? 
+                        <a href="#" class="text-accent-orange hover:text-orange-400 font-medium">
+                            Sign up
+                        </a>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Security Notice -->
+            <div class="text-center text-xs text-text-secondary">
+                <p>By signing in, you agree to our Terms of Service and Privacy Policy</p>
+            </div>
+        </div>
+    </div>
+
     <style>
-        body {
-            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
-            color: #ffffff;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .login-container {
-            max-width: 400px;
-            padding: 2rem;
-            background: rgba(0, 0, 0, 0.8);
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(240, 185, 11, 0.2);
-        }
-        .logo { font-size: 2rem; font-weight: bold; color: #f0b90b; text-align: center; margin-bottom: 1rem; }
-        .btn-primary { background-color: #f0b90b; border-color: #f0b90b; transition: all 0.3s; }
-        .btn-primary:hover { background-color: #d4a009; border-color: #d4a009; }
-        .error { color: #ff4d4d; }
-        @media (max-width: 768px) {
-            .login-container { margin: 1rem; padding: 1rem; }
+        @media (max-width: 640px) {
+            .max-w-md { max-width: 90%; }
+            .p-6 { padding: 1rem; }
+            .p-8 { padding: 1.5rem; }
+            .text-4xl { font-size: 2rem; }
+            .text-2xl { font-size: 1.5rem; }
         }
     </style>
-</head>
-<body>
-    <div class="login-container">
-        <div class="logo">CryptoTrade</div>
-        {% if form.errors %}
-            <p class="error">Invalid email or password. Please try again.</p>
-        {% endif %}
-        <form method="post">
-            {% csrf_token %}
-            <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control bg-dark text-white border-secondary" id="email" name="username" required>
-            </div>
-            <div class="mb-3">
-                <label for="password" class="form-label">Password</label>
-                <input type="password" class="form-control bg-dark text-white border-secondary" id="password" name="password" required>
-            </div>
-            <button type="submit" class="btn btn-primary w-100">Login</button>
-        </form>
-    </div>
-    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
 </body>
 </html>

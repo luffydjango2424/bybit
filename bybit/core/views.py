@@ -1,28 +1,53 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.urls import reverse
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+import logging
 
-from django.contrib.auth.views import LoginView, LogoutView
-from django.views.generic import TemplateView
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponse
+logger = logging.getLogger(__name__)
 
-class CustomLoginView(LoginView):
-    template_name = 'login.html'
-    redirect_authenticated_user = True
+def login_view(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')  # Changed from 'email' to match form
+        password = request.POST.get('password')
+        logger.debug(f"Login attempt with username (email): {username}, password: {'*' * len(password) if password else None}")
+        if not username:
+            logger.error("No username provided in login attempt")
+            messages.error(request, 'Email is required.')
+            return render(request, 'login.html')
+        if not password:
+            logger.error("No password provided in login attempt")
+            messages.error(request, 'Password is required.')
+            return render(request, 'login.html')
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            logger.debug(f"User {username} logged in successfully")
+            return redirect(reverse('dashboard'))
+        else:
+            logger.debug(f"Authentication failed for {username}")
+            messages.error(request, 'Invalid email or password.')
+            return render(request, 'login.html')
+    return render(request, 'login.html')
 
-    def get_success_url(self):
-        return '/'
+@csrf_exempt
+def login_redirect_view(request):
+    if request.method == 'POST':
+        return JsonResponse({'redirect': reverse('login')})
+    return JsonResponse({'error': 'Invalid request'}, status=400)
 
-    def form_invalid(self, form):
-        return self.render_to_response(self.get_context_data(form=form))
+@login_required
+def dashboard_view(request):
+    logger.debug(f"Rendering dashboard for user: {request.user.email}, authenticated: {request.user.is_authenticated}")
+    return render(request, 'dashboard.html', {'user': request.user})
 
-class DashboardView(LoginRequiredMixin, TemplateView):
-    template_name = 'dashboard.html'
-    login_url = '/login/'
-
-    def get(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return self.handle_no_permission()
-        return super().get(request, *args, **kwargs)
-
-class CustomLogoutView(LogoutView):
-    next_page = '/login/'  # Explicitly set redirect
+@login_required
+def logout_view(request):
+    if request.method == 'POST':
+        logger.debug(f"Logging out user: {request.user.email}")
+        logout(request)
+        return redirect(reverse('login'))
+    return redirect(reverse('login'))

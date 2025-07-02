@@ -1,220 +1,472 @@
-{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Crypto Trading Platform</title>
-    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body { background-color: #1a1a1a; color: #ffffff; }
-        .navbar { background-color: #0f0f0f; }
-        .card { background-color: #2a2a2a; border: none; }
-        .price-box { font-size: 1.5rem; font-weight: bold; }
-        .change-negative { color: #ff4d4d; }
-        .change-positive { color: #00cc00; }
-        .chart-container { position: relative; height: 300px; margin: 1rem 0; }
-        .order-book { height: 300px; overflow-y: auto; }
-        .trade-panel { padding: 1rem; }
-        .btn-buy { background-color: #00cc00; border-color: #00cc00; }
-        .btn-sell { background-color: #ff4d4d; border-color: #ff4d4d; }
-        .btn-buy:hover, .btn-sell:hover { opacity: 0.8; }
-        @media (max-width: 768px) {
-            .chart-container, .order-book { height: 200px; }
-            .col-md-8, .col-md-4 { flex: 0 0 100%; max-width: 100%; }
-            .trade-panel { padding: 0.5rem; }
+    <title>Bybit - Trading Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'bg-primary': '#1a1f2e',
+                        'bg-secondary': '#21273b',
+                        'bg-tertiary': '#2b3139',
+                        'text-primary': '#ffffff',
+                        'text-secondary': '#b7bdc6',
+                        'accent-orange': '#f5a623',
+                        'accent-green': '#0ecb81',
+                        'accent-red': '#f6465d',
+                        'border-color': '#3a3f50'
+                    }
+                }
+            }
         }
-    </style>
+    </script>
 </head>
-<body>
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="#">Crypto Trading Platform</a>
-            <div class="ms-auto">
-                <span class="navbar-text me-3">Welcome, {{ user.first_name }} {{ user.last_name }} (Balance: ${{ user.balance }})!</span>
-                <form action="{% url 'logout' %}" method="post">
+<body class="bg-bg-primary text-text-primary">
+    <!-- Unavailable Feature Popup -->
+    <div id="unavailablePopup" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-bg-secondary rounded-lg p-6 border border-border-color max-w-sm w-full">
+            <h3 class="text-lg font-semibold text-text-primary mb-4">Feature Unavailable</h3>
+            <p class="text-text-secondary mb-4">This feature is not available in the web version.</p>
+            <button onclick="closePopup('unavailablePopup')" class="bg-accent-orange hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg w-full">
+                Close
+            </button>
+        </div>
+    </div>
+
+    <!-- Withdraw Gas Fee Popup -->
+    <div id="withdrawPopup" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-bg-secondary rounded-lg p-6 border border-border-color max-w-sm w-full">
+            <h3 class="text-lg font-semibold text-text-primary mb-4">Withdraw Funds</h3>
+            <p class="text-text-secondary mb-4">To withdraw, you must pay a gas fee to transfer funds to your wallet.</p>
+            <button onclick="closePopup('withdrawPopup')" class="bg-accent-orange hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg w-full">
+                Close
+            </button>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-bg-secondary border-b border-border-color px-4 py-3">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <h1 class="text-2xl font-bold text-accent-orange">Bybit</h1>
+                <nav class="hidden md:flex space-x-6">
+                    <a href="#" onclick="showUnavailablePopup()" class="text-text-primary hover:text-accent-orange">Trade</a>
+                    <a href="#" onclick="showUnavailablePopup()" class="text-text-secondary hover:text-text-primary">Markets</a>
+                    <a href="#" onclick="showUnavailablePopup()" class="text-text-secondary hover:text-text-primary">Derivatives</a>
+                    <a href="#" onclick="showUnavailablePopup()" class="text-text-secondary hover:text-text-primary">Tools</a>
+                </nav>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-text-secondary">Balance: <span id="userBalance" class="text-text-primary">$0.00</span></span>
+                <span class="text-text-secondary">Welcome, <span id="userName" class="text-text-primary">Guest</span></span>
+                <form action="{% url 'logout' %}" method="POST">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-outline-light">Logout</button>
+                    <button type="submit" class="bg-accent-red hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm">
+                        Logout
+                    </button>
                 </form>
             </div>
         </div>
-    </nav>
-    <div class="container mt-4">
-        <div class="row">
-            <div class="col-md-8">
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <h5>BTC/USDT <span class="price-box" id="price">107,070.2</span></h5>
-                        <div>
-                            <span>24h Change: <span class="change-negative" id="change">-1.19%</span></span>
-                            <span>24h High: 107,852.6</span>
-                            <span>24h Low: 105,000</span>
-                            <span>24h Turnover(USDT): 979,926,330.80</span>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="priceChart"></canvas>
-                        </div>
-                    </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="grid grid-cols-12 gap-4 p-4">
+        <!-- Trading Pair Info -->
+        <div class="col-span-12 bg-bg-secondary rounded-lg p-4 border border-border-color">
+            <div class="flex items-center justify-between flex-col sm:flex-row">
+                <div class="flex items-center space-x-4 mb-2 sm:mb-0">
+                    <h2 class="text-xl font-semibold">BTC/USDT</h2>
+                    <span class="text-accent-green text-lg font-mono" id="pairPrice">$109,382.00</span>
+                    <span class="text-accent-green text-sm" id="pairChange">+0.00%</span>
                 </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body order-book">
-                        <h5>Order Book</h5>
-                        <table class="table table-dark">
-                            <thead>
-                                <tr>
-                                    <th>Price(USDT)</th>
-                                    <th>Qty(BTC)</th>
-                                    <th>Total</th>
-                                </tr>
-                            </thead>
-                            <tbody id="orderBook"></tbody>
-                        </table>
-                        <p>Spread: 1.0</p>
+                <div class="flex space-x-4 text-sm flex-col sm:flex-row">
+                    <div>
+                        <span class="text-text-secondary">24h High:</span>
+                        <span class="text-text-primary" id="highPrice">$109,382.00</span>
+                    </div>
+                    <div>
+                        <span class="text-text-secondary">24h Low:</span>
+                        <span class="text-text-primary" id="lowPrice">$109,382.00</span>
+                    </div>
+                    <div>
+                        <span class="text-text-secondary">24h Volume:</span>
+                        <span class="text-text-primary" id="volume">0.00 BTC</span>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="row">
-            <div class="col-12">
-                <div class="card trade-panel">
-                    <div class="card-body">
-                        <h5>Trade</h5>
-                        <div class="mb-3">
-                            <label>Limit</label>
-                            <select class="form-select bg-dark text-white">
-                                <option>Limit</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label>Price (USDT)</label>
-                            <input type="number" class="form-control bg-dark text-white" id="tradePrice" value="107251.7">
-                        </div>
-                        <div class="mb-3">
-                            <label>Quantity (BTC)</label>
-                            <input type="number" class="form-control bg-dark text-white" id="tradeQuantity" value="0.00000000">
-                        </div>
-                        <div class="mb-3 text-end">
-                            <button class="btn btn-sm btn-outline-secondary me-2" onclick="setQuantity(0.25)">25%</button>
-                            <button class="btn btn-sm btn-outline-secondary me-2" onclick="setQuantity(0.5)">50%</button>
-                            <button class="btn btn-sm btn-outline-secondary me-2" onclick="setQuantity(0.75)">75%</button>
-                            <button class="btn btn-sm btn-outline-secondary" onclick="setQuantity(1)">100%</button>
-                        </div>
-                        <p>Total: $<span id="total">0.00</span> USDT</p>
-                        <p>Available: $10,000.00 USDT</p>
-                        <button class="btn btn-buy w-100 mb-2" onclick="placeOrder('buy')">Buy BTC</button>
-                        <button class="btn btn-sell w-100" onclick="placeOrder('sell')">Sell BTC</button>
-                    </div>
+
+        <!-- Chart -->
+        <div class="col-span-12 sm:col-span-8 bg-bg-secondary rounded-lg p-4 border border-border-color">
+            <div class="flex items-center justify-between mb-4 flex-col sm:flex-row">
+                <h3 class="text-lg font-semibold">Price Chart</h3>
+                <div class="flex space-x-2 flex-wrap mt-2 sm:mt-0">
+                    <button class="bg-bg-tertiary hover:bg-border-color px-3 py-1 rounded text-sm" onclick="showUnavailablePopup()">1m</button>
+                    <button class="bg-bg-tertiary hover:bg-border-color px-3 py-1 rounded text-sm" onclick="showUnavailablePopup()">5m</button>
+                    <button class="bg-accent-orange text-black px-3 py-1 rounded text-sm" onclick="showUnavailablePopup()">1h</button>
+                    <button class="bg-bg-tertiary hover:bg-border-color px-3 py-1 rounded text-sm" onclick="showUnavailablePopup()">1d</button>
                 </div>
             </div>
+            <div class="h-96">
+                <canvas id="priceChart"></canvas>
+            </div>
         </div>
-        <div class="container mt-4">
-    <div class="row">
-        <div class="col-12 mb-3">
-            <div class="card">
-                <div class="card-body">
-                    <h5>Recent Trades</h5>
-                    <ul id="tradeNotifications" class="list-group">
-                        <li class="list-group-item bg-dark text-white">Trade executed: 0.1 BTC at 107,200 USDT</li>
-                    </ul>
+
+        <!-- Order Book -->
+        <div class="col-span-12 sm:col-span-4 bg-bg-secondary rounded-lg p-4 border border-border-color">
+            <h3 class="text-lg font-semibold mb-4">Order Book</h3>
+            <div class="space-y-2">
+                <div class="flex justify-between text-sm font-semibold text-text-secondary">
+                    <span>Price</span>
+                    <span>Amount</span>
+                    <span>Total</span>
                 </div>
+                
+                <!-- Sell Orders -->
+                <div class="space-y-1" id="sellOrders"></div>
+
+                <!-- Current Price -->
+                <div class="text-center py-2 text-accent-green font-semibold" id="currentPrice">$109,382.00</div>
+
+                <!-- Buy Orders -->
+                <div class="space-y-1" id="buyOrders"></div>
+            </div>
+        </div>
+
+        <!-- Trading Panel -->
+        <div class="col-span-12 sm:col-span-4 bg-bg-secondary rounded-lg p-4 border border-border-color">
+            <div class="flex space-x-2 mb-4 flex-col sm:flex-row">
+                <button onclick="showUnavailablePopup()" class="bg-accent-green text-black px-4 py-2 rounded flex-1 font-semibold mb-2 sm:mb-0">Buy</button>
+                <button onclick="showUnavailablePopup()" class="bg-accent-red text-white px-4 py-2 rounded flex-1 font-semibold">Sell</button>
+            </div>
+            <div class="flex space-x-2 mb-4">
+                <button id="withdrawButton" class="bg-accent-orange text-black px-4 py-2 rounded flex-1 font-semibold">Withdraw</button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm text-text-secondary mb-2">Order Type</label>
+                    <select class="w-full bg-bg-tertiary border border-border-color rounded px-3 py-2 text-text-primary" disabled>
+                        <option>Market</option>
+                        <option>Limit</option>
+                        <option>Stop</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm text-text-secondary mb-2">Price</label>
+                    <input type="number" id="priceInput" value="109382.00" class="w-full bg-bg-tertiary border border-border-color rounded px-3 py-2 text-text-primary" readonly />
+                </div>
+
+                <div>
+                    <label class="block text-sm text-text-secondary mb-2">Amount</label>
+                    <input type="number" id="amountInput" placeholder="0.00" class="w-full bg-bg-tertiary border border-border-color rounded px-3 py-2 text-text-primary" readonly />
+                </div>
+
+                <div>
+                    <label class="block text-sm text-text-secondary mb-2">Total</label>
+                    <input type="number" id="totalInput" placeholder="0.00 USDT" class="w-full bg-bg-tertiary border border-border-color rounded px-3 py-2 text-text-primary" readonly />
+                </div>
+
+                <button id="buyButton" class="w-full bg-accent-green hover:bg-green-600 text-black font-semibold py-3 rounded" onclick="showUnavailablePopup()">
+                    Buy BTC
+                </button>
+            </div>
+        </div>
+
+        <!-- Open Orders -->
+        <div class="col-span-12 bg-bg-secondary rounded-lg p-4 border border-border-color">
+            <h3 class="text-lg font-semibold mb-4">Open Orders</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-text-secondary border-b border-border-color">
+                            <th class="text-left py-2">Time</th>
+                            <th class="text-left py-2">Pair</th>
+                            <th class="text-left py-2">Type</th>
+                            <th class="text-left py-2">Side</th>
+                            <th class="text-left py-2">Amount</th>
+                            <th class="text-left py-2">Price</th>
+                            <th class="text-left py-2">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="openOrders"></tbody>
+                </table>
             </div>
         </div>
     </div>
-    <!-- Existing row for chart and order book -->
-    <div class="row">
-        <!-- Existing chart and order book columns -->
-    </div>
-    <div class="row">
-        <!-- Existing trade panel -->
-    </div>
-</div>
-    </div>
-    <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
+
     <script>
-        const ctx = document.getElementById('priceChart').getContext('2d');
-        const priceChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'BTC/USDT',
-                    data: [],
-                    borderColor: '#f0b90b',
-                    tension: 0.1
-                }]
-            },
-            options: {
-                scales: { y: { beginAtZero: false } },
-                plugins: { legend: { labels: { color: '#ffffff' } } }
-            }
-        });
+        // Django user data
+        const user = {
+            first_name: "{{ user.first_name|default:'' }}",
+            last_name: "{{ user.last_name|default:'' }}",
+            username: "{{ user.username|default:'Guest' }}",
+            balance: {{ user.balance|default:0|floatformat:2 }}
+        };
+        console.log('User data:', user);
+        document.getElementById('userName').textContent = `${user.first_name} ${user.last_name}`.trim() || user.username;
+        document.getElementById('userBalance').textContent = `$${user.balance}`;
 
-        function getRandomPrice() {
-            return (107000 + Math.random() * 1000).toFixed(1);
+        // Popup functions
+        function showUnavailablePopup() {
+            document.getElementById('unavailablePopup').classList.remove('hidden');
         }
-        function getRandomChange() {
-            return (Math.random() * 2 - 1).toFixed(2) + '%';
-        }
-        function updatePrices() {
-            const price = getRandomPrice();
-            const change = getRandomChange();
-            document.getElementById('price').textContent = price;
-            document.getElementById('change').textContent = change;
-            document.getElementById('change').className = parseFloat(change) < 0 ? 'change-negative' : 'change-positive';
-            priceChart.data.labels.push(new Date().toLocaleTimeString());
-            priceChart.data.datasets[0].data.push(parseFloat(price));
-            if (priceChart.data.labels.length > 20) {
-                priceChart.data.labels.shift();
-                priceChart.data.datasets[0].data.shift();
-            }
-            priceChart.update();
-            const orderBook = document.getElementById('orderBook');
-            orderBook.innerHTML = '';
-            for (let i = 0; i < 5; i++) {
-                const row = document.createElement('tr');
-                row.innerHTML = `<td>${getRandomPrice()}</td><td>${(Math.random() * 2).toFixed(5)}</td><td>${(Math.random() * 200000).toFixed(2)}</td>`;
-                orderBook.appendChild(row);
-            }
-        }
-        setInterval(updatePrices, 2000);
-        updatePrices();
 
-        function setQuantity(percentage) {
-            const price = parseFloat(document.getElementById('tradePrice').value) || 0;
-            const maxQuantity = 10 / price; // Based on $10,000 balance
-            document.getElementById('tradeQuantity').value = (maxQuantity * percentage).toFixed(8);
-            updateTotal();
+        function showWithdrawPopup() {
+            document.getElementById('withdrawPopup').classList.remove('hidden');
         }
+
+        function closePopup(popupId) {
+            document.getElementById(popupId).classList.add('hidden');
+        }
+
+        // Chart setup
+        let chart;
+        function initializeChart() {
+            console.log('Attempting to initialize chart');
+            const ctx = document.getElementById('priceChart')?.getContext('2d');
+            if (!ctx) {
+                console.error('Canvas element not found for priceChart');
+                return;
+            }
+
+            try {
+                chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: [{
+                            label: 'BTC/USDT',
+                            data: [],
+                            borderColor: (context) => {
+                                const index = context.dataIndex;
+                                if (index === 0) return '#0ecb81';
+                                const current = context.dataset.data[index]?.y || 0;
+                                const previous = context.dataset.data[index - 1]?.y || 0;
+                                return current >= previous ? '#0ecb81' : '#f6465d';
+                            },
+                            pointRadius: 0,
+                            borderWidth: 2,
+                            tension: 0.3,
+                            fill: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: { unit: 'second' },
+                                grid: { color: '#2b3139' },
+                                ticks: { color: '#b7bdc6', maxTicksLimit: 10 }
+                            },
+                            y: {
+                                grid: { color: '#2b3139' },
+                                ticks: { color: '#b7bdc6', callback: (value) => `$${value.toFixed(2)}` }
+                            }
+                        },
+                        animation: {
+                            duration: 0
+                        }
+                    }
+                });
+                console.log('Chart initialized successfully');
+                fetchInitialData();
+            } catch (error) {
+                console.error('Chart initialization failed:', error.message);
+            }
+        }
+
+        // Simulate BTC/USDT price
+        let lastPrice = 109382;
+        function simulateBTCPrice() {
+            console.log('Simulating BTC price, last price:', lastPrice);
+            const fluctuation = (Math.random() - 0.5) * 0.004; // ±0.2% fluctuation
+            const newPrice = lastPrice * (1 + fluctuation);
+            lastPrice = newPrice;
+            return newPrice;
+        }
+
+        // Simulate USDT price
+        function getUSDTPrice() {
+            return 1.00; // Stable at $1.00
+        }
+
+        // Initialize chart data
+        function fetchInitialData() {
+            console.log('Generating initial chart data');
+            const now = new Date();
+            const initialData = Array.from({ length: 60 }, (_, i) => {
+                const price = 109382 * (1 + (Math.random() - 0.5) * 0.01); // ±1% for initial spread
+                return {
+                    x: new Date(now.getTime() - (59 - i) * 1000),
+                    y: price
+                };
+            });
+            console.log('Initial chart data:', initialData);
+            if (chart && chart.data.datasets[0]) {
+                chart.data.datasets[0].data = initialData;
+                chart.update('none');
+            } else {
+                console.error('Chart not initialized for initial data');
+            }
+            updateMarketData();
+        }
+
+        // Update market data
+        function updateMarketData() {
+            console.log('Updating market data');
+            try {
+                const newPrice = simulateBTCPrice();
+                const usdtPrice = getUSDTPrice();
+                const newData = { x: new Date(), y: newPrice };
+
+                // Update chart
+                if (chart && chart.data.datasets[0]) {
+                    chart.data.datasets[0].data.push(newData);
+                    if (chart.data.datasets[0].data.length > 60) chart.data.datasets[0].data.shift();
+                    chart.update('none');
+                    console.log('Chart updated with price:', newPrice);
+                } else {
+                    console.error('Chart not initialized for update');
+                }
+
+                // Update pair price and change
+                document.getElementById('pairPrice').textContent = `$${newPrice.toFixed(2)}`;
+                document.getElementById('currentPrice').textContent = `$${newPrice.toFixed(2)}`;
+                const priceChange = (newPrice - lastPrice) / lastPrice * 100;
+                document.getElementById('pairChange').textContent = `${(priceChange > 0 ? '+' : '')}${priceChange.toFixed(2)}%`;
+                document.getElementById('pairChange').className = `text-sm ${priceChange >= 0 ? 'text-accent-green' : 'text-accent-red'}`;
+
+                // Update 24h high, low, volume
+                const prices = chart && chart.data.datasets[0] ? chart.data.datasets[0].data.map(d => d.y) : [newPrice];
+                document.getElementById('highPrice').textContent = `$${Math.max(...prices).toFixed(2)}`;
+                document.getElementById('lowPrice').textContent = `$${Math.min(...prices).toFixed(2)}`;
+                document.getElementById('volume').textContent = `${(Math.random() * 10000 + 100000).toFixed(2)} BTC`;
+
+                // Update order book
+                updateOrderBook(newPrice, usdtPrice);
+
+                // Add trade notification
+                addTradeNotification(newPrice);
+            } catch (error) {
+                console.error('Market data update failed:', error.message);
+            }
+        }
+
+        // Update order book
+        function updateOrderBook(currentPrice, usdtPrice) {
+            console.log('Updating order book with price:', currentPrice);
+            const sellOrders = document.getElementById('sellOrders');
+            const buyOrders = document.getElementById('buyOrders');
+            if (!sellOrders || !buyOrders) {
+                console.error('Order book elements not found');
+                return;
+            }
+            sellOrders.innerHTML = '';
+            buyOrders.innerHTML = '';
+
+            for (let i = 1; i <= 5; i++) {
+                const sellPrice = currentPrice + i * 20;
+                const sellAmount = (Math.random() * 2).toFixed(4);
+                const sellTotal = (sellPrice * sellAmount / usdtPrice).toFixed(2);
+                sellOrders.innerHTML += `
+                    <div class="flex justify-between text-sm text-accent-red">
+                        <span>${sellPrice.toFixed(2)}</span>
+                        <span>${sellAmount}</span>
+                        <span>${sellTotal}</span>
+                    </div>`;
+            }
+
+            for (let i = 1; i <= 5; i++) {
+                const buyPrice = currentPrice - i * 20;
+                const buyAmount = (Math.random() * 2).toFixed(4);
+                const buyTotal = (buyPrice * buyAmount / usdtPrice).toFixed(2);
+                buyOrders.innerHTML += `
+                    <div class="flex justify-between text-sm text-accent-green">
+                        <span>${buyPrice.toFixed(2)}</span>
+                        <span>${buyAmount}</span>
+                        <span>${buyTotal}</span>
+                    </div>`;
+            }
+            console.log('Order book updated');
+        }
+
+        // Add trade notification
+        function addTradeNotification(price) {
+            console.log('Adding trade notification');
+            const time = new Date().toLocaleTimeString();
+            const amount = (Math.random() * 2).toFixed(4);
+            const tradePrice = (price + (Math.random() - 0.5) * 20).toFixed(2);
+            const side = Math.random() > 0.5 ? 'Buy' : 'Sell';
+            const row = document.createElement('tr');
+            row.className = 'border-b border-border-color';
+            row.innerHTML = `
+                <td class="py-2">${time}</td>
+                <td class="py-2">BTC/USDT</td>
+                <td class="py-2">Market</td>
+                <td class="py-2 ${side === 'Buy' ? 'text-accent-green' : 'text-accent-red'}">${side}</td>
+                <td class="py-2">${amount}</td>
+                <td class="py-2">${tradePrice}</td>
+                <td class="py-2 text-accent-orange">Pending</td>
+            `;
+            const openOrders = document.getElementById('openOrders');
+            if (openOrders) {
+                openOrders.prepend(row);
+                setTimeout(() => row.remove(), 10000);
+                if (openOrders.children.length > 5) {
+                    openOrders.removeChild(openOrders.lastChild);
+                }
+                console.log('Trade notification added');
+            } else {
+                console.error('Open orders table not found');
+            }
+        }
+
+        // Initialize total input
         function updateTotal() {
-            const price = parseFloat(document.getElementById('tradePrice').value) || 0;
-            const quantity = parseFloat(document.getElementById('tradeQuantity').value) || 0;
-            document.getElementById('total').textContent = (price * quantity).toFixed(2);
+            const price = parseFloat(document.getElementById('priceInput').value) || lastPrice;
+            const amount = parseFloat(document.getElementById('amountInput').value) || 0;
+            document.getElementById('totalInput').value = (price * amount).toFixed(2) + ' USDT';
         }
-        document.getElementById('tradePrice').addEventListener('input', updateTotal);
-        document.getElementById('tradeQuantity').addEventListener('input', updateTotal);
 
-        function placeOrder(type) {
-            alert(`${type === 'buy' ? 'Bought' : 'Sold'} ${document.getElementById('tradeQuantity').value} BTC at $${document.getElementById('tradePrice').value} USDT`);
-        }
-        function addTradeNotification() {
-        const notification = document.createElement('li');
-        notification.className = 'list-group-item bg-dark text-white';
-        notification.textContent = `Trade executed: ${(Math.random() * 0.5).toFixed(4)} BTC at ${getRandomPrice()} USDT`;
-        document.getElementById('tradeNotifications').prepend(notification);
-        if (document.getElementById('tradeNotifications').children.length > 5) {
-            document.getElementById('tradeNotifications').removeChild(document.getElementById('tradeNotifications').lastChild);
-        }
-    }
-    setInterval(addTradeNotification, 5000); // New trade every 5 seconds
-    function showMarketUpdate() {
-        if (Math.random() > 0.7) {
-            alert('Market Update: BTC/USDT volatility increased!');
-        }
-    }
-    setInterval(showMarketUpdate, 10000); // Check every 10 seconds
+        // Event listeners
+        document.getElementById('amountInput').addEventListener('input', updateTotal);
+        document.getElementById('priceInput').addEventListener('input', updateTotal);
+        document.getElementById('withdrawButton').addEventListener('click', showWithdrawPopup);
+
+        // Initialize on DOM load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded, initializing dashboard');
+            initializeChart();
+            setInterval(updateMarketData, 2000); // Update every 2 seconds
+        });
     </script>
+
+    <style>
+        @media (max-width: 640px) {
+            .grid { grid-template-columns: 1fr; }
+            .col-span-12 { grid-column: span 1; }
+            .col-span-8 { grid-column: span 1; }
+            .col-span-4 { grid-column: span 1; }
+            .flex-col sm:flex-row { flex-direction: column; }
+            .mb-2 sm:mb-0 { margin-bottom: 0.5rem; }
+            .mt-2 sm:mt-0 { margin-top: 0.5rem; }
+            .flex-wrap { flex-direction: column; align-items: center; }
+            .px-4 { padding-left: 1rem; padding-right: 1rem; }
+            .text-2xl { font-size: 1.5rem; }
+            .text-xl { font-size: 1.25rem; }
+            .text-lg { font-size: 1.125rem; }
+            .h-screen { height: auto; }
+            .h-96 { height: 16rem; } /* Adjust chart height for mobile */
+        }
+    </style>
 </body>
 </html>
