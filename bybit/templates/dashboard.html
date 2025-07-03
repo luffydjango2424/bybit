@@ -55,19 +55,23 @@
         <div class="flex flex-col sm:flex-row items-center justify-between space-y-3 sm:space-y-0">
             <div class="flex items-center justify-between w-full sm:w-auto">
                 <h1 class="text-2xl font-bold text-accent-orange">Bybit</h1>
-                <nav class="hidden md:flex space-x-6">
-                    <a href="#" onclick="showUnavailablePopup()" class="text-text-primary hover:text-accent-orange">Trade</a>
-                    <a href="#" onclick="showUnavailablePopup()" class="text-text-secondary hover:text-text-primary">Markets</a>
-                    <a href="#" onclick="showUnavailablePopup()" class="text-text-secondary hover:text-text-primary">Derivatives</a>
-                    <a href="#" onclick="showUnavailablePopup()" class="text-text-secondary hover:text-text-primary">Tools</a>
-                </nav>
-            </div>
-            <div class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
-                <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-4 sm:hidden">
                     <span class="text-text-secondary">Balance: <span id="userBalance" class="text-text-primary">$0.00</span></span>
                     <span class="text-text-secondary">Welcome, <span id="userName" class="text-text-primary">Guest</span></span>
                 </div>
-                <div class="flex items-center space-x-2">
+            </div>
+            <div class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+                <div class="hidden sm:flex items-center space-x-4">
+                    <span class="text-text-secondary">Balance: <span id="userBalanceDesktop" class="text-text-primary">$0.00</span></span>
+                    <span class="text-text-secondary">Welcome, <span id="userNameDesktop" class="text-text-primary">Guest</span></span>
+                </div>
+                <div class="flex items-center space-x-2 w-full sm:w-auto justify-center sm:justify-end">
+                    <nav class="hidden md:flex space-x-6">
+                        <a href="#" onclick="showUnavailablePopup()" class="text-text-primary hover:text-accent-orange">Trade</a>
+                        <a href="#" onclick="showUnavailablePopup()" class="text-text-secondary hover:text-text-primary">Markets</a>
+                        <a href="#" onclick="showUnavailablePopup()" class="text-text-secondary hover:text-text-primary">Derivatives</a>
+                        <a href="#" onclick="showUnavailablePopup()" class="text-text-secondary hover:text-text-primary">Tools</a>
+                    </nav>
                     <button id="withdrawButton" class="bg-accent-orange text-black px-4 py-2 rounded-lg text-sm font-semibold">Withdraw</button>
                     <form action="{% url 'logout' %}" method="POST">
                         {% csrf_token %}
@@ -214,6 +218,8 @@
         console.log('User data:', user);
         document.getElementById('userName').textContent = `${user.first_name} ${user.last_name}`.trim() || user.username;
         document.getElementById('userBalance').textContent = `$${user.balance}`;
+        document.getElementById('userNameDesktop').textContent = `${user.first_name} ${user.last_name}`.trim() || user.username;
+        document.getElementById('userBalanceDesktop').textContent = `$${user.balance}`;
 
         // Popup functions
         function showUnavailablePopup() {
@@ -267,7 +273,11 @@
                                 type: 'time',
                                 time: { unit: 'second' },
                                 grid: { color: '#2b3139' },
-                                ticks: { color: '#b7bdc6', maxTicksLimit: 10 }
+                                ticks: { 
+                                    color: '#b7bdc6', 
+                                    maxTicksLimit: 10,
+                                    display: window.innerWidth >= 640
+                                }
                             },
                             y: {
                                 grid: { color: '#2b3139' },
@@ -349,7 +359,7 @@
 
                 // Update 24h high, low, volume
                 const prices = chart && chart.data.datasets[0] ? chart.data.datasets[0].data.map(d => d.y) : [newPrice];
-                document.getElementById('highPrice').textContent = `$${Measure.max(...prices).toFixed(2)}`;
+                document.getElementById('highPrice').textContent = `$${Math.max(...prices).toFixed(2)}`;
                 document.getElementById('lowPrice').textContent = `$${Math.min(...prices).toFixed(2)}`;
                 document.getElementById('volume').textContent = `${(Math.random() * 10000 + 100000).toFixed(2)} BTC`;
 
